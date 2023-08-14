@@ -11,12 +11,15 @@ import shutil
 import numpy as np
 # import tensorflow as tf
 import torch
-import os.path as osp, time, atexit, os
+import os.path as osp
+import time
+import atexit
+import os
 import warnings
 # from spinup.utils.mpi_tools import proc_id, mpi_statistics_scalar
-from utils.mpi_tools import proc_id, mpi_statistics_scalar
+from guard.safe_rl_lib.utils.mpi_tools import proc_id, mpi_statistics_scalar
 # from spinup.utils.serialization_utils import convert_json
-from utils.serialization_utils import convert_json
+from guard.safe_rl_lib.utils.serialization_utils import convert_json
 
 color2num = dict(
     gray=30,
@@ -30,6 +33,7 @@ color2num = dict(
     crimson=38
 )
 
+
 def colorize(string, color, bold=False, highlight=False):
     """
     Colorize a string.
@@ -38,16 +42,18 @@ def colorize(string, color, bold=False, highlight=False):
     """
     attr = []
     num = color2num[color]
-    if highlight: num += 10
+    if highlight:
+        num += 10
     attr.append(str(num))
-    if bold: attr.append('1')
+    if bold:
+        attr.append('1')
     return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
 
 # def restore_tf_graph(sess, fpath):
 #     """
 #     Loads graphs saved by Logger.
 
-#     Will output a dictionary whose keys and values are from the 'inputs' 
+#     Will output a dictionary whose keys and values are from the 'inputs'
 #     and 'outputs' dict you specified with logger.setup_tf_saver().
 
 #     Args:
@@ -56,7 +62,7 @@ def colorize(string, color, bold=False, highlight=False):
 
 #     Returns:
 #         A dictionary mapping from keys to tensors in the computation graph
-#         loaded from ``fpath``. 
+#         loaded from ``fpath``.
 #     """
 #     tf.saved_model.loader.load(
 #                 sess,
@@ -69,6 +75,7 @@ def colorize(string, color, bold=False, highlight=False):
 #     model.update({k: graph.get_tensor_by_name(v) for k,v in model_info['inputs'].items()})
 #     model.update({k: graph.get_tensor_by_name(v) for k,v in model_info['outputs'].items()})
 #     return model
+
 
 def setup_logger_kwargs(exp_name, seed=None, data_dir=None, datestamp=False):
     """
@@ -119,7 +126,7 @@ def setup_logger_kwargs(exp_name, seed=None, data_dir=None, datestamp=False):
     # Make base path
     ymd_time = time.strftime("%Y-%m-%d_") if datestamp else ''
     relpath = ''.join([ymd_time, exp_name])
-    
+
     if seed is not None:
         # Make a seed-specific subfolder in the experiment directory.
         if datestamp:
@@ -131,9 +138,10 @@ def setup_logger_kwargs(exp_name, seed=None, data_dir=None, datestamp=False):
 
     # data_dir = data_dir or DEFAULT_DATA_DIR
     data_dir = './logs/'
-    logger_kwargs = dict(output_dir=osp.join(data_dir, relpath), 
+    logger_kwargs = dict(output_dir=osp.join(data_dir, relpath),
                          exp_name=exp_name)
     return logger_kwargs
+
 
 class Logger:
     """
@@ -162,26 +170,28 @@ class Logger:
                 hyperparameter configuration with multiple random seeds, you
                 should give them all the same ``exp_name``.)
         """
-        if proc_id()==0:
-            self.output_dir = output_dir or "/tmp/experiments/%i"%int(time.time())
+        if proc_id() == 0:
+            self.output_dir = output_dir or "/tmp/experiments/%i" % int(time.time())
             if osp.exists(self.output_dir):
-                print("Warning: Log dir %s already exists! Storing info there anyway."%self.output_dir)
+                print("Warning: Log dir %s already exists! Storing info there anyway." %
+                      self.output_dir)
             else:
                 os.makedirs(self.output_dir)
             self.output_file = open(osp.join(self.output_dir, output_fname), 'w')
             atexit.register(self.output_file.close)
-            print(colorize("Logging data to %s"%self.output_file.name, 'green', bold=True))
+            print(colorize("Logging data to %s" %
+                  self.output_file.name, 'green', bold=True))
         else:
             self.output_dir = None
             self.output_file = None
-        self.first_row=True
+        self.first_row = True
         self.log_headers = []
         self.log_current_row = {}
         self.exp_name = exp_name
 
     def log(self, msg, color='green'):
         """Print a colorized message to stdout."""
-        if proc_id()==0:
+        if proc_id() == 0:
             print(colorize(msg, color, bold=True))
 
     def log_tabular(self, key, val):
@@ -196,8 +206,8 @@ class Logger:
         if self.first_row:
             self.log_headers.append(key)
         else:
-            assert key in self.log_headers, "Trying to introduce a new key %s that you didn't include in the first iteration"%key
-        assert key not in self.log_current_row, "You already set %s this iteration. Maybe you forgot to call dump_tabular()"%key
+            assert key in self.log_headers, "Trying to introduce a new key %s that you didn't include in the first iteration" % key
+        assert key not in self.log_current_row, "You already set %s this iteration. Maybe you forgot to call dump_tabular()" % key
         self.log_current_row[key] = val
 
     def save_config(self, config):
@@ -219,8 +229,9 @@ class Logger:
         config_json = convert_json(config)
         if self.exp_name is not None:
             config_json['exp_name'] = self.exp_name
-        if proc_id()==0:
-            output = json.dumps(config_json, separators=(',',':\t'), indent=4, sort_keys=True)
+        if proc_id() == 0:
+            output = json.dumps(config_json, separators=(
+                ',', ':\t'), indent=4, sort_keys=True)
             print(colorize('Saving config:\n', color='cyan', bold=True))
             print(output)
             with open(osp.join(self.output_dir, "config.json"), 'w') as out:
@@ -247,8 +258,8 @@ class Logger:
 
             itr: An int, or None. Current iteration of training.
         """
-        if proc_id()==0:
-            fname = 'vars.pkl' if itr is None else 'vars%d.pkl'%itr
+        if proc_id() == 0:
+            fname = 'vars.pkl' if itr is None else 'vars%d.pkl' % itr
             try:
                 joblib.dump(state_dict, osp.join(self.output_dir, fname))
             except:
@@ -269,7 +280,7 @@ class Logger:
     #             graph.
 
     #         inputs (dict): A dictionary that maps from keys of your choice
-    #             to the tensorflow placeholders that serve as inputs to the 
+    #             to the tensorflow placeholders that serve as inputs to the
     #             computation graph. Make sure that *all* of the placeholders
     #             needed for your outputs are included!
 
@@ -283,7 +294,7 @@ class Logger:
     # def _tf_simple_save(self, itr=None):
     #     """
     #     Uses simple_save to save a trained model, plus info to make it easy
-    #     to associated tensors to variables after restore. 
+    #     to associated tensors to variables after restore.
     #     """
     #     if proc_id()==0:
     #         assert hasattr(self, 'tf_saver_elements'), \
@@ -296,7 +307,6 @@ class Logger:
     #             shutil.rmtree(fpath)
     #         tf.saved_model.simple_save(export_dir=fpath, **self.tf_saver_elements)
     #         joblib.dump(self.tf_saver_info, osp.join(fpath, 'model_info.pkl'))
-    
 
     def setup_pytorch_saver(self, what_to_save):
         """
@@ -318,12 +328,12 @@ class Logger:
         """
         Saves the PyTorch model (or models).
         """
-        if proc_id()==0:
+        if proc_id() == 0:
             assert hasattr(self, 'pytorch_saver_elements'), \
                 "First have to setup saving with self.setup_pytorch_saver"
             fpath = 'pyt_save'
             fpath = osp.join(self.output_dir, fpath)
-            fname = 'model' + ('%d'%itr if itr is not None else '') + '.pt'
+            fname = 'model' + ('%d' % itr if itr is not None else '') + '.pt'
             fname = osp.join(fpath, fname)
             os.makedirs(fpath, exist_ok=True)
             with warnings.catch_warnings():
@@ -332,12 +342,11 @@ class Logger:
                 # by pickling whole objects (which are dependent on the exact
                 # directory structure at the time of saving) as opposed to
                 # just saving network weights. This works sufficiently well
-                # for the purposes of Spinning Up, but you may want to do 
+                # for the purposes of Spinning Up, but you may want to do
                 # something different for your personal PyTorch project.
                 # We use a catch_warnings() context to avoid the warnings about
                 # not being able to save the source code.
                 torch.save(self.pytorch_saver_elements, fname)
-
 
     def dump_tabular(self):
         """
@@ -345,27 +354,28 @@ class Logger:
 
         Writes both to stdout, and to the output file.
         """
-        if proc_id()==0:
+        if proc_id() == 0:
             vals = []
             key_lens = [len(key) for key in self.log_headers]
-            max_key_len = max(15,max(key_lens))
-            keystr = '%'+'%d'%max_key_len
+            max_key_len = max(15, max(key_lens))
+            keystr = '%' + '%d' % max_key_len
             fmt = "| " + keystr + "s | %15s |"
             n_slashes = 22 + max_key_len
-            print("-"*n_slashes)
+            print("-" * n_slashes)
             for key in self.log_headers:
                 val = self.log_current_row.get(key, "")
-                valstr = "%8.3g"%val if hasattr(val, "__float__") else val
-                print(fmt%(key, valstr))
+                valstr = "%8.3g" % val if hasattr(val, "__float__") else val
+                print(fmt % (key, valstr))
                 vals.append(val)
-            print("-"*n_slashes, flush=True)
+            print("-" * n_slashes, flush=True)
             if self.output_file is not None:
                 if self.first_row:
-                    self.output_file.write("\t".join(self.log_headers)+"\n")
-                self.output_file.write("\t".join(map(str,vals))+"\n")
+                    self.output_file.write("\t".join(self.log_headers) + "\n")
+                self.output_file.write("\t".join(map(str, vals)) + "\n")
                 self.output_file.flush()
         self.log_current_row.clear()
-        self.first_row=False
+        self.first_row = False
+
 
 class EpochLogger(Logger):
     """
@@ -403,7 +413,7 @@ class EpochLogger(Logger):
         Provide an arbitrary number of keyword arguments with numerical 
         values.
         """
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             if not(k in self.epoch_dict.keys()):
                 self.epoch_dict[k] = []
             self.epoch_dict[k].append(v)
@@ -428,17 +438,18 @@ class EpochLogger(Logger):
                 of the diagnostic over the epoch.
         """
         if val is not None:
-            super().log_tabular(key,val)
+            super().log_tabular(key, val)
         else:
             v = self.epoch_dict[key]
-            vals = np.concatenate(v) if isinstance(v[0], np.ndarray) and len(v[0].shape)>0 else v
+            vals = np.concatenate(v) if isinstance(
+                v[0], np.ndarray) and len(v[0].shape) > 0 else v
             stats = mpi_statistics_scalar(vals, with_min_and_max=with_min_and_max)
             super().log_tabular(key if average_only else 'Average' + key, stats[0])
             if not(average_only):
-                super().log_tabular('Std'+key, stats[1])
+                super().log_tabular('Std' + key, stats[1])
             if with_min_and_max:
-                super().log_tabular('Max'+key, stats[3])
-                super().log_tabular('Min'+key, stats[2])
+                super().log_tabular('Max' + key, stats[3])
+                super().log_tabular('Min' + key, stats[2])
         self.epoch_dict[key] = []
 
     def get_stats(self, key):
@@ -446,5 +457,6 @@ class EpochLogger(Logger):
         Lets an algorithm ask the logger for mean/std/min/max of a diagnostic.
         """
         v = self.epoch_dict[key]
-        vals = np.concatenate(v) if isinstance(v[0], np.ndarray) and len(v[0].shape)>0 else v
+        vals = np.concatenate(v) if isinstance(
+            v[0], np.ndarray) and len(v[0].shape) > 0 else v
         return mpi_statistics_scalar(vals)
