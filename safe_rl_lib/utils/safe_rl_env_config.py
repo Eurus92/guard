@@ -2846,7 +2846,7 @@ def configuration_list(task):
                             'touch_end_effector'],
             
             # constraint setting
-            'constrain_hazard3Ds': True,  # Constrain robot from being in hazardous areas
+            # 'constrain_hazard3Ds': True,  # Constrain robot from being in hazardous areas
             'constrain_indicator': False,  # If true, all costs are either 1 or 0 for a given step. If false, then we get dense cost.
 
             # lidar setting

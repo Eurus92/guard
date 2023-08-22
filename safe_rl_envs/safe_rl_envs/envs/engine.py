@@ -262,10 +262,10 @@ class Engine(gym.Env, gym.utils.EzPickle):
         "constrain_ghost3Ds": False,  # Moving objects that must be avoided
         "constrain_indicator": False,  # If true, all costs are either 1 or 0 for a given step.
         #### modif velcity & safety index constraint
-        "constrain_velocity": False,
-        "constrain_index": True,
-        "arm_velocity_threshold": 1.35,##1.35,
-        "safety_k": 0.1, ## TODO
+        # "constrain_velocity": True,
+        # "constrain_index": True,
+        # "arm_velocity_threshold": 1.,##1.35,
+        # "safety_k": 0.1, ## TODO
         ####
         # Hazardous areas
         "hazards_num": 0,  # Number of hazards in an environment
@@ -405,7 +405,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         self.done = True
         
         ### ghost direc modif
-        self.ghost_direc = np.zeros((self.ghost3Ds_num, 3))
+        # self.ghost_direc = np.zeros((self.ghost3Ds_num, 3))
 
     def parse(self, config):
         """Parse a config dict - see self.DEFAULT for description"""
@@ -651,12 +651,12 @@ class Engine(gym.Env, gym.utils.EzPickle):
                     dtype=np.float32,
                 )
             ## push modif
-            if self.observe_box_pos:
-                obs_space_dict["box_pos"] = gym.spaces.Box(-1.0, 1.0, self.box_pos.shape, dtype=np.float32,)
-            # if self.observe_box_lidar:
-            #     obs_space_dict["box_lidar"] = gym.spaces.Box(
-            #         0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
-            #     )
+            # if self.observe_box_pos:
+            #     obs_space_dict["box_pos"] = gym.spaces.Box(-1.0, 1.0, self.box_pos.shape, dtype=np.float32,)
+            if self.observe_box_lidar:
+                obs_space_dict["box_lidar"] = gym.spaces.Box(
+                    0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
+                )
         if self.observe_goal_dist:
             obs_space_dict["goal_dist"] = gym.spaces.Box(
                 0.0, 1.0, (1,), dtype=np.float32,
@@ -668,43 +668,43 @@ class Engine(gym.Env, gym.utils.EzPickle):
         ## goal modif
         if self.observe_goal_lidar:
             if self.goal_3D:
-                # obs_space_dict["goal_lidar"] = gym.spaces.Box(
-                #     0.0,
-                #     1.0,
-                #     (len(self.lidar_body), self.lidar_num_bins, self.lidar_num_bins3D),
-                #     dtype=np.float32,
-                # )
-                obs_space_dict["goal_pos"] = gym.spaces.Box(
-                    -1.0,
+                obs_space_dict["goal_lidar"] = gym.spaces.Box(
+                    0.0,
                     1.0,
-                    (1, 3),
+                    (len(self.lidar_body), self.lidar_num_bins, self.lidar_num_bins3D),
                     dtype=np.float32,
                 )
-            else:
-                # obs_space_dict["goal_lidar"] = gym.spaces.Box(
-                #     0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
+                # obs_space_dict["goal_pos"] = gym.spaces.Box(
+                #     -1.0,
+                #     1.0,
+                #     (1, 3),
+                #     dtype=np.float32,
                 # )
-                obs_space_dict["goal_pos"] = gym.spaces.Box(
-                    -np.inf, np.inf, (1, 3), dtype=np.float32,
+            else:
+                obs_space_dict["goal_lidar"] = gym.spaces.Box(
+                    0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
                 )
+                # obs_space_dict["goal_pos"] = gym.spaces.Box(
+                #     -np.inf, np.inf, (1, 3), dtype=np.float32,
+                # )
         if self.task == "circle" and self.observe_circle:
-            # obs_space_dict["circle_lidar"] = gym.spaces.Box(
-            #     0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
-            # )
-            obs_space_dict["circle_goal_pos"] = gym.spaces.Box(
-                -np.inf, np.inf, (1, 3), dtype=np.float32,  #TODO
+            obs_space_dict["circle_lidar"] = gym.spaces.Box(
+                0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
             )
+            # obs_space_dict["circle_goal_pos"] = gym.spaces.Box(
+            #     -np.inf, np.inf, (1, 3), dtype=np.float32,  #TODO
+            # )
         if self.observe_remaining:
             obs_space_dict["remaining"] = gym.spaces.Box(
                 0.0, 1.0, (1,), dtype=np.float32,
             )
         if self.walls_num and self.observe_walls:
-            # obs_space_dict["walls_lidar"] = gym.spaces.Box(
-            #     0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
-            # )
-            obs_space_dict["walls_pos"] = gym.spaces.Box(
-                -np.inf, np.inf, (self.walls_num, 3), dtype=np.float32,
+            obs_space_dict["walls_lidar"] = gym.spaces.Box(
+                0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
             )
+            # obs_space_dict["walls_pos"] = gym.spaces.Box(
+            #     -np.inf, np.inf, (self.walls_num, 3), dtype=np.float32,
+            # )
         if self.observe_hazards:
             obs_space_dict["hazards_lidar"] = gym.spaces.Box(
                 0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
@@ -714,50 +714,50 @@ class Engine(gym.Env, gym.utils.EzPickle):
             # )
         ## hazard modif
         if self.observe_hazard3Ds: 
-            # obs_space_dict["hazard3Ds_lidar"] = gym.spaces.Box(
-            #     0.0,
-            #     1.0,
-            #     (len(self.lidar_body), self.lidar_num_bins, self.lidar_num_bins3D),
-            #     dtype=np.float32,
-            # )
-            obs_space_dict["hazard3Ds_pos"] = gym.spaces.Box(
-                -1.0, 1.0, (self.hazard3Ds_num, 3), dtype=np.float32,
+            obs_space_dict["hazard3Ds_lidar"] = gym.spaces.Box(
+                0.0,
+                1.0,
+                (len(self.lidar_body), self.lidar_num_bins, self.lidar_num_bins3D),
+                dtype=np.float32,
             )
+            # obs_space_dict["hazard3Ds_pos"] = gym.spaces.Box(
+            #     -1.0, 1.0, (self.hazard3Ds_num, 3), dtype=np.float32,
+            # )
         if self.observe_vases:
-            # obs_space_dict["vases_lidar"] = gym.spaces.Box(
-            #     0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
-            # )
-            obs_space_dict["vases_pos"] = gym.spaces.Box(
-                -np.inf, np.inf, (self.vases_num, 3), dtype=np.float32,
+            obs_space_dict["vases_lidar"] = gym.spaces.Box(
+                0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
             )
+            # obs_space_dict["vases_pos"] = gym.spaces.Box(
+            #     -np.inf, np.inf, (self.vases_num, 3), dtype=np.float32,
+            # )
         if self.gremlins_num and self.observe_gremlins:
-            # obs_space_dict["gremlins_lidar"] = gym.spaces.Box(
-            #     0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
-            # )
-            obs_space_dict["gremlins_pos"] = gym.spaces.Box(
-                -np.inf, np.inf, (self.gremlins_num, 3), dtype=np.float32,
+            obs_space_dict["gremlins_lidar"] = gym.spaces.Box(
+                0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
             )
+            # obs_space_dict["gremlins_pos"] = gym.spaces.Box(
+            #     -np.inf, np.inf, (self.gremlins_num, 3), dtype=np.float32,
+            # )
         if self.ghosts_num and self.observe_ghosts:
-            # obs_space_dict["ghosts_lidar"] = gym.spaces.Box(
-            #     0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
-            # )
-            obs_space_dict["ghosts_pos"] = gym.spaces.Box(
-                -np.inf, np.inf, (self.ghosts_num, 3), dtype=np.float32,
+            obs_space_dict["ghosts_lidar"] = gym.spaces.Box(
+                0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
             )
+            # obs_space_dict["ghosts_pos"] = gym.spaces.Box(
+            #     -np.inf, np.inf, (self.ghosts_num, 3), dtype=np.float32,
+            # )
         ## ghost modif
         if self.ghost3Ds_num and self.observe_ghost3Ds:
-            # obs_space_dict["ghost3Ds_lidar"] = gym.spaces.Box(
-            #     0.0,
-            #     1.0,
-            #     (len(self.lidar_body), self.lidar_num_bins, self.lidar_num_bins3D),
-            #     dtype=np.float32,
+            obs_space_dict["ghost3Ds_lidar"] = gym.spaces.Box(
+                0.0,
+                1.0,
+                (len(self.lidar_body), self.lidar_num_bins, self.lidar_num_bins3D),
+                dtype=np.float32,
+            )
+            # obs_space_dict["ghost3Ds_pos"] = gym.spaces.Box(
+            #     -1.0, 1.0, (self.ghost3Ds_num, 3), dtype=np.float32,
             # )
-            obs_space_dict["ghost3Ds_pos"] = gym.spaces.Box(
-                -1.0, 1.0, (self.ghost3Ds_num, 3), dtype=np.float32,
-            )
-            obs_space_dict["ghost3Ds_dir"] = gym.spaces.Box(
-                -1.0, 1.0, (self.ghost3Ds_num, 3), dtype=np.float32,
-            )
+            # obs_space_dict["ghost3Ds_dir"] = gym.spaces.Box(
+            #     -1.0, 1.0, (self.ghost3Ds_num, 3), dtype=np.float32,
+            # )
         if self.robbers_num and self.observe_robbers:
             obs_space_dict["robbers_lidar"] = gym.spaces.Box(
                 0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
@@ -766,29 +766,29 @@ class Engine(gym.Env, gym.utils.EzPickle):
             #     -np.inf, np.inf, (self.robbers_num, 3), dtype=np.float32,
             # )
         if self.robber3Ds_num and self.observe_robber3Ds:  #robber modif
-            # obs_space_dict["robber3Ds_lidar"] = gym.spaces.Box(
-            #     0.0,
-            #     1.0,
-            #     (len(self.lidar_body), self.lidar_num_bins, self.lidar_num_bins3D),
-            #     dtype=np.float32,
-            # )
-            obs_space_dict["robber3Ds_pos"] = gym.spaces.Box(
-                -1.0, 1.0, (self.robber3Ds_num, 3), dtype=np.float32,
+            obs_space_dict["robber3Ds_lidar"] = gym.spaces.Box(
+                0.0,
+                1.0,
+                (len(self.lidar_body), self.lidar_num_bins, self.lidar_num_bins3D),
+                dtype=np.float32,
             )
+            # obs_space_dict["robber3Ds_pos"] = gym.spaces.Box(
+            #     -1.0, 1.0, (self.robber3Ds_num, 3), dtype=np.float32,
+            # )
         if self.pillars_num and self.observe_pillars:
-            # obs_space_dict["pillars_lidar"] = gym.spaces.Box(
-            #     0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
-            # )
-            obs_space_dict["pillars_pos"] = gym.spaces.Box(
-                -np.inf, np.inf, (self.pillars_num, 3), dtype=np.float32,
+            obs_space_dict["pillars_lidar"] = gym.spaces.Box(
+                0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
             )
+            # obs_space_dict["pillars_pos"] = gym.spaces.Box(
+            #     -np.inf, np.inf, (self.pillars_num, 3), dtype=np.float32,
+            # )
         if self.buttons_num and self.observe_buttons:
-            # obs_space_dict["buttons_lidar"] = gym.spaces.Box(
-            #     0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
-            # )
-            obs_space_dict["buttons_pos"] = gym.spaces.Box(
-                -np.inf, np.inf, (self.buttons_num, 3), dtype=np.float32,
+            obs_space_dict["buttons_lidar"] = gym.spaces.Box(
+                0.0, 1.0, (self.lidar_num_bins,), dtype=np.float32
             )
+            # obs_space_dict["buttons_pos"] = gym.spaces.Box(
+            #     -np.inf, np.inf, (self.buttons_num, 3), dtype=np.float32,
+            # )
         if self.observe_qpos:
             obs_space_dict["qpos"] = gym.spaces.Box(
                 -np.inf, np.inf, (self.robot.nq,), dtype=np.float32
@@ -1805,24 +1805,21 @@ class Engine(gym.Env, gym.utils.EzPickle):
             obs["goal_compass"] = self.obs_compass(self.goal_pos)
         if self.observe_goal_lidar:  # goal modif
             if self.goal_3D:
-                pos = self.goal_pos
-                obs["goal_pos"] = pos / MAX_POS
-                # obs["goal_pos"] = self.goal_pos
-                # obs["goal_lidar"] = self.obs_lidar3D([self.goal_pos], GROUP_GOAL)
+                # pos = self.goal_pos
+                # obs["goal_pos"] = pos / MAX_POS
+                obs["goal_lidar"] = self.obs_lidar3D([self.goal_pos], GROUP_GOAL)
             else:
-                pos = self.goal_pos
-                obs["goal_pos"] = pos / MAX_POS
-                # obs["goal_pos"] = self.goal_pos
-                # obs["goal_lidar"] = self.obs_lidar([self.goal_pos], GROUP_GOAL)
+                # pos = self.goal_pos
+                # obs["goal_pos"] = pos / MAX_POS
+                obs["goal_lidar"] = self.obs_lidar([self.goal_pos], GROUP_GOAL)
         if self.task == "push":  # push modif
             box_pos = self.box_pos
             if self.observe_box_comp:
                 obs["box_compass"] = self.obs_compass(box_pos)
-            if self.observe_box_pos:
-                obs["box_pos"] = box_pos / MAX_POS
-                # obs["box_pos"] = box_pos
-            # if self.observe_box_lidar:
-            #     obs["box_lidar"] = self.obs_lidar([box_pos], GROUP_BOX)
+            # if self.observe_box_pos:
+            #     obs["box_pos"] = box_pos / MAX_POS
+            if self.observe_box_lidar:
+                obs["box_lidar"] = self.obs_lidar([box_pos], GROUP_BOX)
         if self.task == "circle" and self.observe_circle:
             obs["circle_goal_pos"] = self.goal_pos  #TODO????
             # obs["circle_lidar"] = self.obs_lidar([self.goal_pos], GROUP_CIRCLE)
@@ -1863,51 +1860,51 @@ class Engine(gym.Env, gym.utils.EzPickle):
             )
         # modif
         if self.walls_num and self.observe_walls:
-            obs["walls_pos"] = np.array(self.walls_pos) / MAX_POS
-            # obs["walls_lidar"] = self.obs_lidar(self.walls_pos, GROUP_WALL)
+            # obs["walls_pos"] = np.array(self.walls_pos) / MAX_POS
+            obs["walls_lidar"] = self.obs_lidar(self.walls_pos, GROUP_WALL)
         if self.observe_hazards:  
-            obs["hazards_pos"] = np.array(self.hazards_pos) / MAX_POS
-            # obs["hazards_lidar"] = self.obs_lidar(self.hazards_pos, GROUP_HAZARD)
+            # obs["hazards_pos"] = np.array(self.hazards_pos) / MAX_POS
+            obs["hazards_lidar"] = self.obs_lidar(self.hazards_pos, GROUP_HAZARD)
         if self.observe_hazard3Ds:  # hazard modif
-            pos = np.array(self.hazard3Ds_pos)
-            obs["hazard3Ds_pos"] = pos / MAX_POS
-            # obs["hazard3Ds_lidar"] = self.obs_lidar3D(
-            #     self.hazard3Ds_pos, GROUP_HAZARD3D
-            # )
+            # pos = np.array(self.hazard3Ds_pos)
+            # obs["hazard3Ds_pos"] = pos / MAX_POS
+            obs["hazard3Ds_lidar"] = self.obs_lidar3D(
+                self.hazard3Ds_pos, GROUP_HAZARD3D
+            )
         if self.observe_vases:
-            obs["vases_pos"] = np.array(self.vases_pos) / MAX_POS
-            # obs["vases_lidar"] = self.obs_lidar(self.vases_pos, GROUP_VASE)
+            # obs["vases_pos"] = np.array(self.vases_pos) / MAX_POS
+            obs["vases_lidar"] = self.obs_lidar(self.vases_pos, GROUP_VASE)
         if self.gremlins_num and self.observe_gremlins:
-            obs["gremlins_pos"] = np.array(self.gremlins_obj_pos) / MAX_POS
-            # obs["gremlins_lidar"] = self.obs_lidar(self.gremlins_obj_pos, GROUP_GREMLIN)
+            # obs["gremlins_pos"] = np.array(self.gremlins_obj_pos) / MAX_POS
+            obs["gremlins_lidar"] = self.obs_lidar(self.gremlins_obj_pos, GROUP_GREMLIN)
         if self.ghosts_num and self.observe_ghosts:
-            obs["ghosts_pos"] = np.array(self.ghosts_pos) / MAX_POS
-            # obs["ghosts_lidar"] = self.obs_lidar(self.ghosts_pos, GROUP_GHOST)
+            # obs["ghosts_pos"] = np.array(self.ghosts_pos) / MAX_POS
+            obs["ghosts_lidar"] = self.obs_lidar(self.ghosts_pos, GROUP_GHOST)
         if self.ghost3Ds_num and self.observe_ghost3Ds:   # ghost modif
-            pos = np.array(self.ghost3Ds_pos)
-            obs["ghost3Ds_pos"] = pos / MAX_POS
-            obs["ghost3Ds_dir"] = self.ghost_direc
-            # obs["ghost3Ds_lidar"] = self.obs_lidar3D(self.ghost3Ds_pos, GROUP_GHOST3D)
+            # pos = np.array(self.ghost3Ds_pos)
+            # obs["ghost3Ds_pos"] = pos / MAX_POS
+            # obs["ghost3Ds_dir"] = self.ghost_direc
+            obs["ghost3Ds_lidar"] = self.obs_lidar3D(self.ghost3Ds_pos, GROUP_GHOST3D)
         if self.robbers_num and self.observe_robbers:
-            obs["robbers_pos"] = np.array(self.robbers_pos) / MAX_POS
-            # obs["robbers_lidar"] = self.obs_lidar(self.robbers_pos, GROUP_ROBBER)
+            # obs["robbers_pos"] = np.array(self.robbers_pos) / MAX_POS
+            obs["robbers_lidar"] = self.obs_lidar(self.robbers_pos, GROUP_ROBBER)
         if self.robber3Ds_num and self.observe_robber3Ds:   # robber modif
-            pos = np.array(self.robber3Ds_pos)
-            obs["robber3Ds_pos"] = pos / MAX_POS
-            # obs["robber3Ds_lidar"] = self.obs_lidar3D(
-            #     self.robber3Ds_pos, GROUP_ROBBER3D
-            # )
+            # pos = np.array(self.robber3Ds_pos)
+            # obs["robber3Ds_pos"] = pos / MAX_POS
+            obs["robber3Ds_lidar"] = self.obs_lidar3D(
+                self.robber3Ds_pos, GROUP_ROBBER3D
+            )
         if self.pillars_num and self.observe_pillars:
-            obs["pillars_pos"] = np.array(self.pillars_pos) / MAX_POS
-            # obs["pillars_lidar"] = self.obs_lidar(self.pillars_pos, GROUP_PILLAR)
+            # obs["pillars_pos"] = np.array(self.pillars_pos) / MAX_POS
+            obs["pillars_lidar"] = self.obs_lidar(self.pillars_pos, GROUP_PILLAR)
         if self.buttons_num and self.observe_buttons:
             # Buttons observation is zero while buttons are resetting
             if self.buttons_timer == 0:
-                obs["buttons_pos"] = np.array(self.buttons_pos) / MAX_POS
-                # obs["buttons_lidar"] = self.obs_lidar(self.buttons_pos, GROUP_BUTTON)
+                # obs["buttons_pos"] = np.array(self.buttons_pos) / MAX_POS
+                obs["buttons_lidar"] = self.obs_lidar(self.buttons_pos, GROUP_BUTTON)
             else:  # TODO not sure button_pos dim and whether ==0 to reset
-                obs["buttons_pos"] = np.array([[0, 0, 0] for i in range(self.buttons_num)])
-                # obs["buttons_lidar"] = np.zeros(self.lidar_num_bins)
+                # obs["buttons_pos"] = np.array([[0, 0, 0] for i in range(self.buttons_num)])
+                obs["buttons_lidar"] = np.zeros(self.lidar_num_bins)
         if self.observe_qpos:
             obs["qpos"] = self.data.qpos.copy()
         if self.observe_qvel:
@@ -2023,46 +2020,14 @@ class Engine(gym.Env, gym.utils.EzPickle):
                         self.hazards_size - h_dist
                     )
 
-        dist_min = 100000
-        haz_pos = np.zeros((3, 1))
         if self.constrain_hazard3Ds:
-            cost["cost_hazard3Ds"] = 0
+            cost["cost_hazard3Ds"] = 0.0
             for h_pos in self.hazard3Ds_pos:
                 h_dist = self.dist_xyz(h_pos)
-                if h_dist < dist_min:
-                    dist_min = h_dist
-                    haz_pos = h_pos
                 if h_dist <= self.hazard3Ds_size:
                     cost["cost_hazard3Ds"] += self.hazard3Ds_cost * (
                         self.hazard3Ds_size - h_dist
                     )
-        ############# constraint on the safety index of hazards 
-        if self.constrain_index and self.observe_sensors and self.constrain_hazard3Ds:
-            cost["cost_index"] = 0
-            if "arm" in self.robot_base:
-                link = []
-                for i in range(self.arm_link_n):
-                    link.append(self.world.body_pos("link_" + str(i + 1)))
-                for i in range(self.arm_link_n - 1):
-                    cur_dist, point = distLinSeg(link[i], link[i + 1], haz_pos, haz_pos)
-                    cur_dist -= self.world.body_size("link_" + str(i + 1))[0]
-                    if cur_dist == dist_min:
-                        min_idx = i
-                        break
-                direc = point[:, 0] - point[:, 1]  # from hazard to robot
-                direc_norm = direc / np.linalg.norm(direc)
-                robot_velocity = self.world.get_sensor("velocimeter_link_" + str(min_idx+1))
-                robot_velocity_proj = np.dot(robot_velocity, direc_norm)
-                ### d_{min}-d-k\dot{d}
-                phi = self.hazard3Ds_size - dist_min - self.safety_k * robot_velocity_proj
-                ### d\dot{d}
-                # phi = -dist_min * robot_velocity_proj
-                ### d_{min}^2-d^2-k\dot{d}
-                # phi = self.hazard3Ds_size**2 - dist_min**2 - self.safety_k*robot_velocity_proj
-                ### -k\dot{d}
-                # phi = -self.safety_k * robot_velocity_proj
-                cost["cost_index"] = np.clip(phi, 0.0, 1.0)
-        
                 
 
         # Calculate non-contact cost of ghosts
@@ -2074,54 +2039,13 @@ class Engine(gym.Env, gym.utils.EzPickle):
                         self.ghosts_size - h_dist
                     )
 
-        dist_min = 100000
-        haz_pos = np.zeros((3, 1))
         if self.constrain_ghost3Ds and (self.ghost3Ds_contact == False):
             for h_pos in self.ghost3Ds_pos:
                 h_dist = self.dist_xyz(h_pos)
-                if h_dist < dist_min:
-                    dist_min = h_dist
-                    haz_pos = h_pos
                 if h_dist <= self.ghost3Ds_size:
                     cost["cost_ghost3Ds"] += self.ghost3Ds_dist_cost * (
                         self.ghost3Ds_size - h_dist
                     )
-        ############### constraint on the safety index of ghosts
-        if self.constrain_index and self.observe_sensors and self.constrain_ghost3Ds:
-            cost["cost_index"] = 0
-            if "arm" in self.robot_base:
-                link = []
-                for i in range(self.arm_link_n):
-                    link.append(self.world.body_pos("link_" + str(i + 1)))
-                for i in range(self.arm_link_n - 1):
-                    cur_dist, point = distLinSeg(link[i], link[i + 1], haz_pos, haz_pos)
-                    cur_dist -= self.world.body_size("link_" + str(i + 1))[0]
-                    if cur_dist == dist_min:
-                        min_idx = i
-                        break
-                direc = point[:, 0] - point[:, 1]   # from ghost to robot
-                direc_norm = direc / np.linalg.norm(direc)
-                robot_velocity = self.world.get_sensor("velocimeter_link_" + str(min_idx+1))
-                # rel_velocity_proj = np.dot(robot_velocity, direc_norm) - self.ghost3Ds_velocity
-                ghost_vel = self.ghost_direc[min_idx]
-                if self.ghost_direc[min_idx][2] > 0.1:
-                    ghost_vel[2] = 0
-                rel_velocity_proj = np.dot(robot_velocity-self.ghost_direc[min_idx], direc_norm)
-                ### d_{min}-d-k\dot{d}
-                # phi = self.ghost3Ds_size - dist_min - self.safety_k * rel_velocity_proj
-                ### d\dot{d}
-                phi = -self.safety_k * rel_velocity_proj
-                cost["cost_index"] = np.clip(phi, 0.0, 1.0)
-                
-        ############ constraint on the linear velocity of the end-effector
-        if self.constrain_velocity and self.observe_sensors:  #modif velocity cost sparse
-            cost["cost_velocity"] = 0
-            if "arm" in self.robot_base:
-                sensor = "velocimeter_link_" + str(self.arm_link_n)
-                robot_velocity = np.sqrt(np.sum(np.square(self.world.get_sensor(sensor))))
-                if robot_velocity > self.arm_velocity_threshold:
-                    cost["cost_velocity"] = robot_velocity - self.arm_velocity_threshold  #dense
-                    # cost["cost_velocity"] = 1  # sparse
         
         # Sum all costs into single total cost
         cost["cost"] = sum(v for k, v in cost.items() if k.startswith("cost_"))
@@ -2250,7 +2174,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
                     target[2], self.ghost3Ds_z_range[0], self.ghost3Ds_z_range[1]
                 )
                 pos = target
-                self.ghost_direc[i] = target - ghost_pos_mocap  # modif ghost direc
+                # self.ghost_direc[i] = target - ghost_pos_mocap  # modif ghost direc
                 self.data.set_mocap_pos(name + "mocap", pos)
         if self.robbers_num:
             robber_pos_last_dict = []
